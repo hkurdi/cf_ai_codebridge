@@ -106,7 +106,8 @@ export class ConversationDO {
 
     const audioBase64 = await this.generateSpeech(
       aiResponse,
-      explanationLanguage
+      explanationLanguage,
+      toLang
     );
 
     return this.jsonResponse({
@@ -119,7 +120,7 @@ export class ConversationDO {
 
   private async handleMessage(request: Request): Promise<Response> {
     const body = (await request.json()) as MessageRequestBody;
-    const { message, explanationLanguage = "en" } = body;
+    const { message } = body;
 
     if (!message) {
       return this.jsonResponse(
@@ -132,7 +133,7 @@ export class ConversationDO {
     }
 
     const conversationState = await this.getOrCreateState();
-    conversationState.explanationLanguage = explanationLanguage;
+    const explanationLanguage = conversationState.explanationLanguage || "en";
 
     const systemPrompt = this.buildFollowUpSystemPrompt(conversationState);
 
@@ -157,7 +158,8 @@ export class ConversationDO {
 
     const audioBase64 = await this.generateSpeech(
       aiResponse,
-      explanationLanguage
+      explanationLanguage,
+      conversationState.languages.to
     );
 
     return this.jsonResponse({
@@ -227,8 +229,7 @@ export class ConversationDO {
 [الكود المترجم]
 \`\`\`
 
-**الشرح:**
-[شرحك هنا]`;
+[اكتب شرحك بشكل طبيعي بدون تنسيق ماركداون]`;
     }
 
     return `You are CodeBridge, an expert code translator and technical explainer.
@@ -250,8 +251,7 @@ Response format:
 [translated code]
 \`\`\`
 
-**Explanation:**
-[Your explanation here]`;
+[Write your explanation naturally without markdown formatting or bold text. Write as if speaking aloud.]`;
   }
 
   private buildFollowUpSystemPrompt(state: ConversationState): string {
@@ -265,7 +265,7 @@ Response format:
 
 السياق: كنت تساعد في ترجمة كود من ${state.languages.from} إلى ${state.languages.to}.${context}
 
-أجب على أسئلة المستخدم بناءً على السياق السابق للمحادثة والكود المترجم.`;
+أجب على أسئلة المستخدم بناءً على السياق السابق للمحادثة والكود المترجم. اكتب بشكل طبيعي بدون تنسيق ماركداون.`;
     }
 
     const englishContext = state.currentCode
@@ -276,7 +276,7 @@ Response format:
 
 Context: You've been helping translate code from ${state.languages.from} to ${state.languages.to}.${englishContext}
 
-Answer the user's questions based on the previous conversation context and translated code.`;
+Answer the user's questions based on the previous conversation context and translated code. Write naturally without markdown formatting. Write as if speaking aloud.`;
   }
 
   private async callLLM(
@@ -307,7 +307,8 @@ Answer the user's questions based on the previous conversation context and trans
 
   private async generateSpeech(
     text: string,
-    language: "en" | "ar"
+    language: "en" | "ar",
+    codeLang: string
   ): Promise<string | null> {
     try {
       const voiceId =
@@ -315,7 +316,7 @@ Answer the user's questions based on the previous conversation context and trans
           ? this.env.ELEVENLABS_VOICE_ID_ARABIC
           : this.env.ELEVENLABS_VOICE_ID_ENGLISH;
 
-      const cleanText = this.stripCodeBlocks(text);
+      const cleanText = this.cleanForTTS(text, codeLang);
 
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -361,14 +362,93 @@ Answer the user's questions based on the previous conversation context and trans
     }
   }
 
+  private codeToSpeech(code: string, language: string): string {
+    let spoken = code;
+
+    spoken = spoken.replace(/::/g, " double colon ");
+    spoken = spoken.replace(/<</g, " left shift ");
+    spoken = spoken.replace(/>>/g, " right shift ");
+    spoken = spoken.replace(/\./g, " dot ");
+    spoken = spoken.replace(/->/g, " arrow ");
+    spoken = spoken.replace(/==/g, " equals equals ");
+    spoken = spoken.replace(/!=/g, " not equals ");
+    spoken = spoken.replace(/<=/g, " less than or equal ");
+    spoken = spoken.replace(/>=/g, " greater than or equal ");
+    spoken = spoken.replace(/&&/g, " and ");
+    spoken = spoken.replace(/\|\|/g, " or ");
+    spoken = spoken.replace(/\+\+/g, " plus plus ");
+    spoken = spoken.replace(/--/g, " minus minus ");
+    spoken = spoken.replace(/\+=/g, " plus equals ");
+    spoken = spoken.replace(/-=/g, " minus equals ");
+    spoken = spoken.replace(/\((?=[^\s])/g, " open parenthesis ");
+    spoken = spoken.replace(/(?<=[^\s])\)/g, " close parenthesis ");
+    spoken = spoken.replace(/\{/g, " open brace ");
+    spoken = spoken.replace(/\}/g, " close brace ");
+    spoken = spoken.replace(/\[/g, " open bracket ");
+    spoken = spoken.replace(/\]/g, " close bracket ");
+    spoken = spoken.replace(/;/g, " semicolon ");
+    spoken = spoken.replace(/:/g, " colon ");
+    spoken = spoken.replace(/,/g, " comma ");
+    spoken = spoken.replace(/"/g, " quote ");
+    spoken = spoken.replace(/'/g, " single quote ");
+    spoken = spoken.replace(/</g, " less than ");
+    spoken = spoken.replace(/>/g, " greater than ");
+    spoken = spoken.replace(/=/g, " equals ");
+    spoken = spoken.replace(/\+/g, " plus ");
+    spoken = spoken.replace(/-/g, " minus ");
+    spoken = spoken.replace(/\*/g, " times ");
+    spoken = spoken.replace(/\//g, " divided by ");
+    spoken = spoken.replace(/%/g, " modulo ");
+    spoken = spoken.replace(/&/g, " ampersand ");
+    spoken = spoken.replace(/\|/g, " pipe ");
+    spoken = spoken.replace(/!/g, " exclamation ");
+    spoken = spoken.replace(/#/g, " hash ");
+
+    spoken = spoken.replace(/std/g, "standard");
+    spoken = spoken.replace(/endl/g, "end line");
+    spoken = spoken.replace(/cout/g, "c out");
+    spoken = spoken.replace(/cin/g, "c in");
+    spoken = spoken.replace(/printf/g, "print f");
+    spoken = spoken.replace(/scanf/g, "scan f");
+
+    spoken = spoken.replace(/\s+/g, " ");
+    spoken = spoken.trim();
+
+    return `The translated code is: ${spoken}.`;
+  }
+
+  private cleanForTTS(text: string, codeLang: string): string {
+    const codeBlockRegex = /```[\w]*\n([\s\S]*?)```/g;
+    let cleanedText = text;
+    const codeBlocks: string[] = [];
+
+    cleanedText = cleanedText.replace(codeBlockRegex, (match, code) => {
+      const spokenCode = this.codeToSpeech(code.trim(), codeLang);
+      codeBlocks.push(spokenCode);
+      return "[CODE_BLOCK]";
+    });
+
+    cleanedText = cleanedText.replace(/\*\*Explanation:\*\*/gi, "");
+    cleanedText = cleanedText.replace(/\*\*([^\*]+)\*\*/g, "$1");
+    cleanedText = cleanedText.replace(/\*([^\*]+)\*/g, "$1");
+    cleanedText = cleanedText.replace(/^[\s-]*-\s*/gm, "");
+    cleanedText = cleanedText.replace(/^\s*\d+\.\s*/gm, "");
+    cleanedText = cleanedText.replace(/`([^`]+)`/g, "$1");
+
+    codeBlocks.forEach((spokenCode) => {
+      cleanedText = cleanedText.replace("[CODE_BLOCK]", spokenCode);
+    });
+
+    cleanedText = cleanedText.replace(/\n{3,}/g, "\n\n");
+    cleanedText = cleanedText.trim();
+
+    return cleanedText;
+  }
+
   private extractCode(text: string): string {
     const codeBlockRegex = /```[\w]*\n([\s\S]*?)```/;
     const match = text.match(codeBlockRegex);
     return match ? match[1].trim() : text;
-  }
-
-  private stripCodeBlocks(text: string): string {
-    return text.replace(/```[\w]*\n[\s\S]*?```/g, "[code omitted]");
   }
 
   private jsonResponse(data: ApiResponse, status: number = 200): Response {
