@@ -14,19 +14,17 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioBase64, autoPlay 
   const [duration, setDuration] = useState(0);
 
   useEffect(() => {
-    // Clean up previous audio
+
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
     }
 
-    // Create new audio
     const audioUrl = audioUtils.createAudioUrl(audioBase64);
     audioUrlRef.current = audioUrl;
     
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
-    // Event listeners
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
     });
@@ -48,12 +46,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioBase64, autoPlay 
       setCurrentTime(0);
     });
 
-    // Auto play if requested
     if (autoPlay) {
       playAudio(audio);
     }
 
-    // Cleanup
     return () => {
       audio.pause();
       audio.remove();
