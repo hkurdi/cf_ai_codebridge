@@ -183,7 +183,7 @@ How do I make the LLM output more consistent? Should I:
 
 ---
 
-### Prism.js Dependency Hell
+### Prism.js Dependency Issues
 ```
 Getting errors: "Cannot read properties of undefined (reading 'tokenizePlaceholders')"
 
