@@ -2,7 +2,7 @@
 
 **An AI-powered code translation platform with bilingual voice explanations.**
 
-🌐 **Live Demo**: [cf-ai-codebridge.netlify.app](https://cf-ai-codebridge.netlify.app)
+🌐 **Live Demo**: [codebridge-cf-hlk.netlify.app](https://codebridge-cf-hlk.netlify.app)
 
 ---
 
