@@ -198,20 +198,19 @@ What's the cleanest way to manage Prism language dependencies? Do I need a dynam
 **Why this prompt**: Understanding library internals to fix cryptic errors.
 
 ---
-
 ### API Response Structure
-
+```
 My API currently returns everything in one string:
+    
+    code + explanation
 
-code + explanation
+Frontend parses with regex. But I'm thinking about switching to structured JSON:
 
-Frontend parses with regex. But I'm thinking:
-
-{
-  "code": "...",
-  "explanation": "...",
-  "audio": "..."
-}
+    {
+      "code": "...",
+      "explanation": "...",
+      "audio": "..."
+    }
 
 Pros/cons of each approach? Which scales better if I add features like:
 - Multiple code examples
