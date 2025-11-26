@@ -200,7 +200,7 @@ What's the cleanest way to manage Prism language dependencies? Do I need a dynam
 ---
 
 ### API Response Structure
-```
+
 My API currently returns everything in one string:
 
 code + explanation
