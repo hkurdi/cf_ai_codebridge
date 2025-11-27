@@ -129,7 +129,7 @@ I build tools that make programming more accessible:
 
 **Links**:
 - GitHub: [github.com/hkurdi](https://github.com/hkurdi)
-- Portfolio: [hamzakurdi.com](https://hamzakurdi.com)
+- Portfolio: [whoishlk.dev](https://whoishlk.dev)
 - LinkedIn: [linkedin.com/in/hamza-kurdi](https://linkedin.com/in/hamza-kurdi)
 
 ---
